@@ -44,16 +44,30 @@ const qSchema = z.object({
 
 router.get('/', validate(qSchema), async (req, res, next) => {
   try {
+    // 🔍 Debug loglar — sadece ne geldiğini görmek için
+    console.log('FIXTURES RAW QUERY =>', req.query);
+    console.log('FIXTURES VALID QUERY =>', req.valid?.query);
+
     const { league, season, round, provider } = req.valid.query;
+
     const key = `fixtures:${provider}:${league}:${season || 'current'}:${round || 'all'}`;
     const cached = await getCache(key);
-    if (cached) return ok(res, cached);
+    if (cached) {
+      console.log('FIXTURES CACHE HIT =>', key);
+      return ok(res, cached);
+    }
 
     const api = getProvider(provider);
     const data = await api.fixtures({ league, season, round });
+
+    console.log('FIXTURES API CALL =>', { provider, league, season, round, matches: data?.matches?.length });
+
     await setCache(key, data);
     return ok(res, data);
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('FIXTURES ERROR =>', e);
+    next(e);
+  }
 });
 
 export default router;
