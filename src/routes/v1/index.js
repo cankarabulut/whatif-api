@@ -1,32 +1,22 @@
-import { Router } from 'express';
-import standings from './standings.js';
-import fixtures from './fixtures.js';
-import competitions from './competitions.js';
-import rounds from './rounds.js';
-
-/* const api = Router();
-api.use('/standings', standings);
-api.use('/fixtures', fixtures);
-api.use('/competitions', competitions);
-api.use('/rounds', rounds);
-
-export default api;
- */
-
 // src/routes/v1/index.js
 import { Router } from 'express';
 import fixturesRouter from './fixtures.js';
 import standingsRouter from './standings.js';
+import roundsRouter from './rounds.js';
 import competitionsRouter from './competitions.js';
 
 const router = Router();
 
+// /api/v1/fixtures
 router.use('/fixtures', fixturesRouter);
+
+// /api/v1/standings
 router.use('/standings', standingsRouter);
+
+// /api/v1/rounds
+router.use('/rounds', roundsRouter);
+
+// /api/v1/competitions
 router.use('/competitions', competitionsRouter);
 
 export default router;
-
-
-
-
