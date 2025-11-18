@@ -11,46 +11,45 @@ const qSchema = z.object({
   query: z.object({
     league: z.string().min(1),
     season: z.string().optional(),
-  })
+  }),
 });
 
 /**
  * @openapi
  * /api/v1/standings:
  *   get:
- *     summary: Get normalized standings table
+ *     summary: Get league table / standings
  *     parameters:
  *       - in: query
  *         name: league
  *         required: true
  *         schema: { type: string }
- *         description: FD için lig kodu (örn. PL), AF için lig id (örn. 39)
  *       - in: query
  *         name: season
  *         schema: { type: string }
- *         description: Sezon (örn. 2024)
- *       - in: query
- *         name: provider
- *         schema: { type: string, enum: [fd, af], default: fd }
- *         description: Veri sağlayıcısı
  *     responses:
  *       200:
  *         description: OK
  */
-
-
 router.get('/', validate(qSchema), async (req, res, next) => {
   try {
-    const { league, season, provider } = req.valid.query;
-    const key = `standings:${provider}:${league}:${season || 'current'}`;
-    const cached = await getCache(key);
-    if (cached) return ok(res, cached);
+    const { league, season } = req.valid.query;
+    const cacheKey = `standings:fd:${league}:${season || 'current'}`;
 
-    const api = getProvider();
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return ok(res, cached);
+    }
+
+    const api = getProvider(); // şu an sadece FD
     const data = await api.standings({ league, season });
-    await setCache(key, data);
+
+    await setCache(cacheKey, data);
     return ok(res, data);
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('[standings] error', e);
+    next(e);
+  }
 });
 
 export default router;
