@@ -1,23 +1,58 @@
-# OS
-.DS_Store
-
-# Env
-.env
-.env.*.local
-.env.local
-
-# Node
+# -----------------------------
+# Node.js
+# -----------------------------
 node_modules/
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
-.pnpm-store/
+pnpm-debug.log*
+package-lock.json
 
-# Next.js (frontend için önemli)
-.next/
-out/
-.vercel/
+# -----------------------------
+# Environment Variables
+# -----------------------------
+.env
+.env.local
+.env.*.local
 
-# Build/coverage
+# -----------------------------
+# Build Output (if using TS or bundlers)
+# -----------------------------
 dist/
 build/
-coverage/
+out/
+*.tsbuildinfo
+
+# -----------------------------
+# Logs
+# -----------------------------
+logs/
+*.log
+*.log.*
+debug.log
+
+# -----------------------------
+# Cache / Temp
+# -----------------------------
+.cache/
+tmp/
+temp/
+.cache-loader/
+
+# -----------------------------
+# Editor / System Files
+# -----------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Swagger / Generated files
+# -----------------------------
+swagger-output.json
+
+# -----------------------------
+# Docker / Deployment
+# -----------------------------
+docker-data/

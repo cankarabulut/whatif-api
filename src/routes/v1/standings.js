@@ -11,7 +11,6 @@ const qSchema = z.object({
   query: z.object({
     league: z.string().min(1),
     season: z.string().optional(),
-    provider: z.enum(['fd','af']).default('fd'),
   })
 });
 
@@ -47,7 +46,7 @@ router.get('/', validate(qSchema), async (req, res, next) => {
     const cached = await getCache(key);
     if (cached) return ok(res, cached);
 
-    const api = getProvider(provider);
+    const api = getProvider();
     const data = await api.standings({ league, season });
     await setCache(key, data);
     return ok(res, data);

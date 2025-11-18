@@ -12,7 +12,6 @@ const qSchema = z.object({
     league: z.string().min(1),
     season: z.string().optional(),
     round: z.string().optional(),
-    provider: z.enum(['fd','af']).default('fd'),
   })
 });
 
@@ -57,7 +56,7 @@ router.get('/', validate(qSchema), async (req, res, next) => {
       return ok(res, cached);
     }
 
-    const api = getProvider(provider);
+    const api = getProvider();
     const data = await api.fixtures({ league, season, round });
 
     console.log('FIXTURES API CALL =>', { provider, league, season, round, matches: data?.matches?.length });
