@@ -1,0 +1,171 @@
+[
+    {
+      "id": "PL",
+      "name": "Premier League",
+      "area": "England",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "PD",
+      "name": "La Liga",
+      "area": "Spain",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "SA",
+      "name": "Serie A",
+      "area": "Italy",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "BL1",
+      "name": "Bundesliga",
+      "area": "Germany",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "FL1",
+      "name": "Ligue 1",
+      "area": "France",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "DED",
+      "name": "Eredivisie",
+      "area": "Netherlands",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "PPL",
+      "name": "Primeira Liga",
+      "area": "Portugal",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "BSA",
+      "name": "Brasileirão Série A",
+      "area": "Brazil",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "ELC",
+      "name": "EFL Championship",
+      "area": "England",
+      "type": "league",
+      "format": "round_robin",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "CL",
+      "name": "UEFA Champions League",
+      "area": "Europe",
+      "type": "tournament",
+      "format": "group_and_knockout",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "EL",
+      "name": "UEFA Europa League",
+      "area": "Europe",
+      "type": "tournament",
+      "format": "group_and_knockout",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "ECL",
+      "name": "UEFA Europa Conference League",
+      "area": "Europe",
+      "type": "tournament",
+      "format": "group_and_knockout",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2023, 2024, 2025],
+      "cycle": { "frequency": "annual" }
+    },
+    {
+      "id": "WC",
+      "name": "FIFA World Cup",
+      "area": "World",
+      "type": "tournament",
+      "format": "group_and_knockout",
+      "providers": {
+        "standings": "fd",
+        "fixtures": "fd"
+      },
+      "seasons": [2018, 2022],
+      "cycle": { "frequency": "every_4_years" }
+    }
+  ]  
