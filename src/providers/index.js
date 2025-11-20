@@ -1,5 +1,25 @@
 import { fdStandings, fdFixtures } from './footballData.js';
+import { tsdbStandings, tsdbFixtures } from './theSportsDb.js';
 
-export function getProvider() {
-  return { standings: fdStandings, fixtures: fdFixtures };
+// providerId -> implemantasyon
+const providers = {
+  fd: {
+    standings: fdStandings,
+    fixtures: fdFixtures,
+  },
+  tsdb: {
+    standings: tsdbStandings,
+    fixtures: tsdbFixtures,
+  },
+};
+
+/**
+ * @param {string} providerId - örn: "fd", "tsdb"
+ */
+export function getProvider(providerId = 'fd') {
+  const p = providers[providerId];
+  if (!p) {
+    throw new Error(`Unknown provider: ${providerId}`);
+  }
+  return p;
 }

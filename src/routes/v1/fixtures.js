@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { validate } from '../../middleware/validate.js';
 import { getCache, setCache } from '../../middleware/cache.js';
 import { getProvider } from '../../providers/index.js';
+import competitions from '../../config/competitions.json' assert { type: 'json' };
 import { ok } from '../../utils/http.js';
 
 const router = Router();
@@ -12,61 +13,94 @@ const qSchema = z.object({
     league: z.string().min(1),
     season: z.string().optional(),
     round: z.string().optional(),
-  })
+  }),
 });
 
 /**
- * @openapi
- * /api/v1/fixtures:
- *   get:
- *     summary: Get fixtures (optionally by round)
- *     parameters:
- *       - in: query
- *         name: league
- *         required: true
- *         schema: { type: string }
- *       - in: query
- *         name: season
- *         schema: { type: string }
- *       - in: query
- *         name: round
- *         schema: { type: string }
- *         description: FD için sayısal matchday; AF için "Regular Season - 12" gibi
- *       - in: query
- *         name: provider
- *         schema: { type: string, enum: [fd, af], default: fd }
- *     responses:
- *       200:
- *         description: OK
+ * Belirli bir league id için competitions.json içinden config bul
  */
+function findCompetition(leagueId) {
+  return competitions.find((c) => c.id === leagueId);
+}
 
+/**
+ * Provider seçimi: competitions.providers.fixtures yoksa default 'fd'
+ */
+function getFixtureProviderId(competition) {
+  return competition?.providers?.fixtures || 'fd';
+}
 
-router.get('/', validate(qSchema), async (req, res, next) => {
-  try {
-    // 🔍 Debug loglar — sadece ne geldiğini görmek için
-    console.log('FIXTURES RAW QUERY =>', req.query);
-    console.log('FIXTURES VALID QUERY =>', req.valid?.query);
-
-    const { league, season, round, provider } = req.valid.query;
-
-    const key = `fixtures:${provider}:${league}:${season || 'current'}:${round || 'all'}`;
-    const cached = await getCache(key);
-    if (cached) {
-      console.log('FIXTURES CACHE HIT =>', key);
-      return ok(res, cached);
-    }
-
-    const api = getProvider();
-    const data = await api.fixtures({ league, season, round });
-
-    console.log('FIXTURES API CALL =>', { provider, league, season, round, matches: data?.matches?.length });
-
-    await setCache(key, data);
-    return ok(res, data);
-  } catch (e) {
-    console.error('FIXTURES ERROR =>', e);
-    next(e);
+/**
+ * Provider’a geçecek league id:
+ *  - FD için: direkt competition.id
+ *  - TSDB için: external.tsdbLeagueId varsa onu, yoksa competition.id
+ */
+function mapLeagueIdForProvider(competition, providerId, requestedLeague) {
+  if (!competition) return requestedLeague;
+  if (providerId === 'tsdb' && competition.external?.tsdbLeagueId) {
+    return competition.external.tsdbLeagueId;
   }
-});
+  return competition.id;
+}
+
+router.get(
+  '/',
+  validate(qSchema),
+  async (req, res, next) => {
+    try {
+      const { league, season, round } = req.valid.query;
+
+      const competition = findCompetition(league);
+      const providerId = getFixtureProviderId(competition);
+      const leagueForProvider = mapLeagueIdForProvider(
+        competition,
+        providerId,
+        league
+      );
+
+      const cacheKey = [
+        'fixtures',
+        providerId,
+        leagueForProvider,
+        season || 'current',
+        round || 'all',
+      ].join(':');
+
+      const cached = await getCache(cacheKey);
+      if (cached) {
+        return ok(res, cached);
+      }
+
+      const api = getProvider(providerId);
+      const data = await api.fixtures({
+        league: leagueForProvider,
+        season,
+        round,
+      });
+
+      const normalized = {
+        ...data,
+        // response içinde league alanını tekrar INTERNAL id ile set edelim
+        league,
+        provider: providerId,
+      };
+
+      console.log('FIXTURES API CALL =>', {
+        provider: providerId,
+        league,
+        leagueForProvider,
+        season: normalized.season,
+        round: normalized.round,
+        matches: normalized?.matches?.length,
+      });
+
+      await setCache(cacheKey, normalized);
+      return ok(res, normalized);
+    } catch (e) {
+      console.error('FIXTURES ERROR =>', e);
+      next(e);
+    }
+  }
+);
 
 export default router;

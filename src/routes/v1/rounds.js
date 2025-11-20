@@ -2,7 +2,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../../middleware/validate.js';
+import { getCache, setCache } from '../../middleware/cache.js';
 import { getProvider } from '../../providers/index.js';
+import competitions from '../../config/competitions.json' assert { type: 'json' };
 import { ok } from '../../utils/http.js';
 
 const router = Router();
@@ -14,128 +16,122 @@ const qSchema = z.object({
   }),
 });
 
-/**
- * @openapi
- * /api/v1/rounds:
- *   get:
- *     summary: Get round / matchday info for league+season
- *     parameters:
- *       - in: query
- *         name: league
- *         required: true
- *         schema: { type: string }
- *       - in: query
- *         name: season
- *         schema: { type: string }
- *     responses:
- *       200:
- *         description: OK
- */
-router.get('/', validate(qSchema), async (req, res, next) => {
-  try {
-    const { league, season } = req.valid.query;
-    const api = getProvider(); // şu an sadece FD
+function findCompetition(leagueId) {
+  return competitions.find((c) => c.id === leagueId);
+}
 
-    const fixturesData = await api.fixtures({ league, season });
-    const matches = fixturesData.matches || [];
+function getFixtureProviderId(competition) {
+  return competition?.providers?.fixtures || 'fd';
+}
 
-    // Round -> { finished, upcoming, total }
-    const roundMap = new Map();
-
-    // FD status'ları:
-    // SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELED
-    const finishedStatuses = ['FINISHED'];
-    // "gelecek/aktif" sayacağımız statüler:
-    const upcomingStatuses = [
-      'SCHEDULED',
-      'TIMED',
-      'IN_PLAY',
-      'PAUSED',
-      'POSTPONED',
-      'SUSPENDED',
-    ];
-
-    for (const m of matches) {
-      const r = Number(m.round || m.matchday || 0);
-      if (!r) continue;
-
-      if (!roundMap.has(r)) {
-        roundMap.set(r, { finished: 0, upcoming: 0, total: 0 });
-      }
-      const info = roundMap.get(r);
-      info.total += 1;
-
-      const status = String(m.status || '').toUpperCase();
-
-      if (finishedStatuses.includes(status)) {
-        info.finished += 1;
-      } else if (upcomingStatuses.includes(status)) {
-        info.upcoming += 1;
-      }
-    }
-
-    const rounds = Array.from(roundMap.keys()).sort((a, b) => a - b);
-
-    let lastPlayed = null;
-    let active = null;
-    let seasonActive = false;
-
-    // En son bitmiş haftayı bul
-    for (const r of rounds) {
-      const info = roundMap.get(r);
-      if (info.finished > 0) {
-        lastPlayed = r;
-      }
-    }
-
-    if (lastPlayed != null) {
-      // lastPlayed'den sonra en yakın upcoming haftayı "active" kabul et
-      const upcomingAfter = rounds.filter(
-        (r) => r > lastPlayed && roundMap.get(r).upcoming > 0
-      );
-
-      if (upcomingAfter.length > 0) {
-        active = upcomingAfter[0];
-        seasonActive = true;
-      } else {
-        // Bütün maçlar oynanmış veya sadece ertelenmiş/kapanmış; sezon bitti
-        seasonActive = false;
-        // UX için active'i son oynanan haftaya sabitleyebiliriz
-        active = lastPlayed;
-      }
-    } else {
-      // Hiç finished yoksa, ilk upcoming haftayı active kabul et
-      const upcomingAll = rounds.filter(
-        (r) => roundMap.get(r).upcoming > 0
-      );
-
-      if (upcomingAll.length > 0) {
-        active = upcomingAll[0];
-        seasonActive = true;
-      } else {
-        // Ne finished ne upcoming var → saçma ama defensive case
-        seasonActive = false;
-        active = null;
-      }
-    }
-
-    return ok(res, {
-      league,
-      season: season || fixturesData.season,
-      lastPlayed,
-      active,
-      seasonActive,
-      rounds: rounds.map((r) => ({
-        round: r,
-        finished: roundMap.get(r).finished,
-        upcoming: roundMap.get(r).upcoming,
-        total: roundMap.get(r).total,
-      })),
-    });
-  } catch (e) {
-    console.error('[rounds] error', e);
-    next(e);
+function mapLeagueIdForProvider(competition, providerId, requestedLeague) {
+  if (!competition) return requestedLeague;
+  if (providerId === 'tsdb' && competition.external?.tsdbLeagueId) {
+    return competition.external.tsdbLeagueId;
   }
-});
+  return competition.id;
+}
+
+// FD ve TSDB status değerlerini "bitmiş mi?" açısından normalize edelim
+function isFinishedStatus(status) {
+  if (!status) return false;
+  const s = String(status).toUpperCase();
+
+  // Football-Data
+  if (['FINISHED'].includes(s)) return true;
+
+  // TheSportsDB (Soccer) - FT, AET, PEN vb.
+  if (['FT', 'AET', 'PEN', 'AWD', 'WO'].includes(s)) return true;
+
+  // Diğer her şey (NS, SCHEDULED, TIMED, 1H, 2H, HT, PST vs.) bitmemiş kabul
+  return false;
+}
+
+router.get(
+  '/',
+  validate(qSchema),
+  async (req, res, next) => {
+    try {
+      const { league, season } = req.valid.query;
+
+      const competition = findCompetition(league);
+      const providerId = getFixtureProviderId(competition);
+      const leagueForProvider = mapLeagueIdForProvider(
+        competition,
+        providerId,
+        league
+      );
+
+      const cacheKey = [
+        'rounds',
+        providerId,
+        leagueForProvider,
+        season || 'current',
+      ].join(':');
+
+      const cached = await getCache(cacheKey);
+      if (cached) {
+        return ok(res, cached);
+      }
+
+      const api = getProvider(providerId);
+      // Tüm sezonun fixture'larını çekiyoruz (round paramı yok)
+      const data = await api.fixtures({
+        league: leagueForProvider,
+        season,
+      });
+
+      const matches = data.matches || [];
+
+      const roundMap = new Map(); // round -> { total, finished, upcoming }
+
+      for (const m of matches) {
+        // provider'lar round alanını numeric ya da null döndürüyor
+        const rVal = m.round;
+        if (rVal == null) continue;
+
+        const r = Number(rVal);
+        if (!roundMap.has(r)) {
+          roundMap.set(r, { total: 0, finished: 0, upcoming: 0 });
+        }
+        const entry = roundMap.get(r);
+        entry.total += 1;
+
+        if (isFinishedStatus(m.status)) {
+          entry.finished += 1;
+        } else {
+          entry.upcoming += 1;
+        }
+      }
+
+      const rounds = Array.from(roundMap.keys()).sort((a, b) => a - b);
+      const seasonActive = Array.from(roundMap.values()).some(
+        (info) => info.upcoming > 0
+      );
+
+      const payload = {
+        league,
+        season: season || data.season || null,
+        provider: providerId,
+        seasonActive,
+        rounds: rounds.map((r) => {
+          const info = roundMap.get(r);
+          return {
+            round: r,
+            finished: info.finished,
+            upcoming: info.upcoming,
+            total: info.total,
+          };
+        }),
+      };
+
+      await setCache(cacheKey, payload);
+      return ok(res, payload);
+    } catch (e) {
+      console.error('[rounds] error', e);
+      next(e);
+    }
+  }
+);
 
 export default router;
