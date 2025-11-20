@@ -9,7 +9,7 @@ export const env = {
     .map(s => s.trim())
     .filter(Boolean),
   fdKey: process.env.FOOTBALL_DATA_KEY,
-  tsdbKey: process.env.THESPORTSDB_KEY || '1',
+  tsdbKey: process.env.THESPORTSDB_KEY || '123',
   redisUrl: process.env.REDIS_URL,
   cacheTTL: Number(process.env.CACHE_TTL_SECONDS || 60),
   rlWindow: Number(process.env.RATE_LIMIT_WINDOW_MS || 60000),
