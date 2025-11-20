@@ -167,5 +167,34 @@
       },
       "seasons": [2018, 2022],
       "cycle": { "frequency": "every_4_years" }
-    }
+    },
+    {
+        "id": "TRSL",
+        "name": "Süper Lig",
+        "area": "Turkey",
+        "type": "league",
+        "format": "round_robin",
+      
+        "providers": {
+          "standings": "tsdb",
+          "fixtures": "tsdb"
+        },
+      
+        "external": {
+          "tsdbLeagueId": 4339
+        },
+      
+        "seasons": [
+          "2020-2021",
+          "2021-2022",
+          "2022-2023",
+          "2023-2024",
+          "2024-2025",
+          "2025-2026"
+        ],
+      
+        "cycle": {
+          "frequency": "annual"
+        }
+      }      
   ]  
