@@ -10,16 +10,24 @@ if (env.redisUrl) {
 
 export async function getCache(key) {
   if (redis) {
-    const val = await redis.get(key);
-    return val ? JSON.parse(val) : null;
+    try {
+      const val = await redis.get(key);
+      return val ? JSON.parse(val) : null;
+    } catch {
+      return lru.get(key) || null;
+    }
   }
   return lru.get(key) || null;
 }
 
 export async function setCache(key, value, ttlSec = env.cacheTTL) {
   if (redis) {
-    await redis.set(key, JSON.stringify(value), 'EX', ttlSec);
-  } else {
-    lru.set(key, value, { ttl: ttlSec * 1000 });
+    try {
+      await redis.set(key, JSON.stringify(value), 'EX', ttlSec);
+    } catch {
+      lru.set(key, value, { ttl: ttlSec * 1000 });
+    }
+    return;
   }
+  lru.set(key, value, { ttl: ttlSec * 1000 });
 }

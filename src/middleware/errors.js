@@ -7,5 +7,6 @@ export function notFound(req, res) {
 
 export function errorHandler(err, req, res, next) {
   logger.error({ err }, 'Unhandled error');
-  return serverError(res, err.message || 'Internal error');
+  const isProd = process.env.NODE_ENV === 'production';
+  return serverError(res, isProd ? 'Internal error' : err.message || 'Internal error');
 }
