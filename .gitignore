@@ -1,0 +1,58 @@
+# -----------------------------
+# Node.js
+# -----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# -----------------------------
+# Environment Variables
+# -----------------------------
+.env
+.env.local
+.env.*.local
+
+# -----------------------------
+# Build Output (if using TS or bundlers)
+# -----------------------------
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# -----------------------------
+# Logs
+# -----------------------------
+logs/
+*.log
+*.log.*
+debug.log
+
+# -----------------------------
+# Cache / Temp
+# -----------------------------
+.cache/
+tmp/
+temp/
+.cache-loader/
+
+# -----------------------------
+# Editor / System Files
+# -----------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Swagger / Generated files
+# -----------------------------
+swagger-output.json
+
+# -----------------------------
+# Docker / Deployment
+# -----------------------------
+docker-data/
