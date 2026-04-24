@@ -92,6 +92,7 @@ router.get(
 
           const matches = data.matches || [];
           const roundMap = new Map();
+          const activeCandidates = [];
 
           for (const m of matches) {
             const rVal = m.round;
@@ -108,6 +109,11 @@ router.get(
               entry.finished += 1;
             } else {
               entry.upcoming += 1;
+              const time = m.utcDate ? new Date(m.utcDate).getTime() : NaN;
+              activeCandidates.push({
+                round: r,
+                time: Number.isFinite(time) ? time : null,
+              });
             }
           }
 
@@ -115,7 +121,19 @@ router.get(
           const seasonActive = Array.from(roundMap.values()).some(
             (info) => info.upcoming > 0
           );
-          const active = rounds.find((r) => roundMap.get(r).upcoming > 0) || null;
+          const now = Date.now();
+          const datedCandidates = activeCandidates
+            .filter((c) => c.time != null)
+            .sort((a, b) => a.time - b.time);
+          const currentOrStarted = datedCandidates
+            .filter((c) => c.time <= now)
+            .sort((a, b) => b.time - a.time)[0];
+          const nextUpcoming = datedCandidates.find((c) => c.time > now);
+          const active =
+            currentOrStarted?.round ??
+            nextUpcoming?.round ??
+            rounds.find((r) => roundMap.get(r).upcoming > 0) ??
+            null;
 
           const payload = {
             league,
