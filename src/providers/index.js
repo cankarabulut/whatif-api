@@ -13,6 +13,8 @@ const providers = {
   },
 };
 
+const PROVIDER_IDS = Object.keys(providers);
+
 /**
  * @param {string} providerId - örn: "fd", "tsdb"
  */
@@ -22,4 +24,9 @@ export function getProvider(providerId = 'fd') {
     throw new Error(`Unknown provider: ${providerId}`);
   }
   return p;
+}
+
+export function getProviderCandidates(preferred = 'fd') {
+  if (!preferred || !providers[preferred]) return ['fd', 'tsdb'];
+  return [preferred, ...PROVIDER_IDS.filter((id) => id !== preferred)];
 }

@@ -18,6 +18,9 @@ export async function fdStandings({ league, season }) {
     table: data.standings?.[0]?.table?.map((t) => ({
       rank: t.position,
       team: t.team.name,
+      tla: t.team.tla || null,
+      shortName: t.team.shortName || null,
+      crest: t.team.crest || null,
       played: t.playedGames,
       won: t.won,
       draw: t.draw,
@@ -46,7 +49,13 @@ export async function fdFixtures({ league, season, round }) {
       status: m.status,
       home: m.homeTeam.name,
       away: m.awayTeam.name,
-      round: m.matchday, // added for rounds computation
+      homeTla: m.homeTeam.tla || null,
+      awayTla: m.awayTeam.tla || null,
+      homeShort: m.homeTeam.shortName || null,
+      awayShort: m.awayTeam.shortName || null,
+      homeCrest: m.homeTeam.crest || null,
+      awayCrest: m.awayTeam.crest || null,
+      round: m.matchday,
       score: {
         fullTime: m.score.fullTime,
         halfTime: m.score.halfTime,

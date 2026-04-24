@@ -42,6 +42,9 @@ export async function tsdbStandings({ league, season }) {
     table: table.map((t) => ({
       rank: t.intRank != null ? Number(t.intRank) : null,
       team: t.strTeam,
+      tla: t.strTeamShort || null,
+      shortName: t.strTeamShort || null,
+      crest: t.strTeamBadge || null,
       played: t.intPlayed != null ? Number(t.intPlayed) : null,
       won: t.intWin != null ? Number(t.intWin) : null,
       draw: t.intDraw != null ? Number(t.intDraw) : null,
@@ -92,7 +95,10 @@ export async function tsdbFixtures({ league, season, round }) {
       status: e.strStatus || 'NS',
       home: e.strHomeTeam,
       away: e.strAwayTeam,
-      // intRound genelde string geliyor, sayıya çevirelim
+      homeCrest: e.strHomeTeamBadge || null,
+      awayCrest: e.strAwayTeamBadge || null,
+      homeShort: e.strHomeTeamShort || null,
+      awayShort: e.strAwayTeamShort || null,
       round: e.intRound != null ? Number(e.intRound) : null,
       score: {
         fullTime: {
@@ -101,7 +107,7 @@ export async function tsdbFixtures({ league, season, round }) {
           away:
             e.intAwayScore != null ? Number(e.intAwayScore) : null,
         },
-        halfTime: null, // TSDB'de half-time score farklı alanlarda; şimdilik null bırakıyoruz
+        halfTime: null,
       },
     })),
     provider: 'tsdb',

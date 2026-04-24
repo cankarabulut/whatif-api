@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validate } from '../../middleware/validate.js';
 import { getCache, setCache } from '../../middleware/cache.js';
-import { getProvider } from '../../providers/index.js';
+import { getProvider, getProviderCandidates } from '../../providers/index.js';
 import competitions from '../../config/competitions.json' assert { type: 'json' };
 import { ok } from '../../utils/http.js';
 
@@ -13,6 +13,7 @@ const qSchema = z.object({
     league: z.string().min(1),
     season: z.string().optional(),
     round: z.string().optional(),
+    provider: z.enum(['fd', 'tsdb']).optional(),
   }),
 });
 
@@ -48,54 +49,60 @@ router.get(
   validate(qSchema),
   async (req, res, next) => {
     try {
-      const { league, season, round } = req.valid.query;
+      const { league, season, round, provider } = req.valid.query;
 
       const competition = findCompetition(league);
-      const providerId = getFixtureProviderId(competition);
-      const leagueForProvider = mapLeagueIdForProvider(
-        competition,
-        providerId,
-        league
-      );
+      const preferredProvider = provider || getFixtureProviderId(competition);
+      const providerCandidates = getProviderCandidates(preferredProvider);
+      const errors = [];
 
-      const cacheKey = [
-        'fixtures',
-        providerId,
-        leagueForProvider,
-        season || 'current',
-        round || 'all',
-      ].join(':');
+      for (const providerId of providerCandidates) {
+        try {
+          const leagueForProvider = mapLeagueIdForProvider(
+            competition,
+            providerId,
+            league
+          );
+          const cacheKey = [
+            'fixtures',
+            providerId,
+            leagueForProvider,
+            season || 'current',
+            round || 'all',
+          ].join(':');
 
-      const cached = await getCache(cacheKey);
-      if (cached) {
-        return ok(res, cached);
+          const cached = await getCache(cacheKey);
+          if (cached) {
+            return ok(res, {
+              ...cached,
+              providerRequested: preferredProvider,
+              providerFallback: providerId !== preferredProvider,
+            });
+          }
+
+          const api = getProvider(providerId);
+          const data = await api.fixtures({
+            league: leagueForProvider,
+            season,
+            round,
+          });
+
+          const normalized = {
+            ...data,
+            league,
+            provider: providerId,
+            providerRequested: preferredProvider,
+            providerFallback: providerId !== preferredProvider,
+          };
+
+          await setCache(cacheKey, normalized);
+          return ok(res, normalized);
+        } catch (providerErr) {
+          errors.push(`${providerId}: ${providerErr.message}`);
+        }
       }
 
-      const api = getProvider(providerId);
-      const data = await api.fixtures({
-        league: leagueForProvider,
-        season,
-        round,
-      });
-
-      const normalized = {
-        ...data,
-        // response içinde league alanını tekrar INTERNAL id ile set edelim
-        league,
-        provider: providerId,
-      };
-
-      console.log('FIXTURES API CALL =>', {
-        provider: providerId,
-        league,
-        leagueForProvider,
-        season: normalized.season,
-        round: normalized.round,
-        matches: normalized?.matches?.length,
-      });
-
-      await setCache(cacheKey, normalized);
-      return ok(res, normalized);
+      throw new Error(`All providers failed for fixtures. ${errors.join(' | ')}`);
     } catch (e) {
       console.error('FIXTURES ERROR =>', e);
       next(e);

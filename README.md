@@ -16,8 +16,15 @@ Create a `.env` file from `.env.example` and fill your keys.
 ## Endpoints
 
 - `GET /health`
-- `GET /api/v1/standings?league=PL&season=2024&provider=fd`
-- `GET /api/v1/fixtures?league=39&season=2024&provider=af`
+- `GET /api/v1/competitions`
+- `GET /api/v1/standings?league=PL&season=2025&provider=fd`
+- `GET /api/v1/fixtures?league=PL&season=2025&round=31&provider=fd`
+- `GET /api/v1/rounds?league=PL&season=2025`
+
+Notes:
+- `provider` is optional (`fd` or `tsdb`).
+- If a requested provider fails, API automatically retries with the other provider.
+- Responses include `provider`, `providerRequested`, and `providerFallback` fields.
 
 ## Deploy
 - Dockerfile included.
